@@ -19,7 +19,7 @@ clang_dir      = $(new_clang)/clang/clang
 clang_tool     = $(clang_dir)/scripts/update.py
 clang_bin      = $(new_clang)/third_party/llvm-build/Release+Asserts/bin/
 
-src = $(wildcard *.c)
+src = $(wildcard */target.c)
 out = $(patsubst %.c,%,$(src))
 
 all: deps $(out)                # make all
