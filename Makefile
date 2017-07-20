@@ -29,13 +29,13 @@ obj     = $(src:.c=.o)
 out     = $(src:.c=)
 
 targets   = $(patsubst %,$(prefix)/%,                $(trg))
-corpi     = $(patsubst %,$(prefix)/%_seed_corpus.zip,$(trg))
+corpora   = $(patsubst %,$(prefix)/%_seed_corpus.zip,$(trg))
 optionses = $(patsubst %,$(prefix)/%.options,        $(trg_opt))
 
 found_dictionaries = $(wildcard ./*.dict)
 dictionaries = $(addprefix $(prefix)/,$(notdir $(found_dictionaries)))
 
-exports = $(targets) $(corpi) $(optionses) $(dictionaries)
+exports = $(targets) $(corpora) $(optionses) $(dictionaries)
 
 all: $(out)                     # make all
 export: $(prefix) $(exports)    # not quite install, but close
@@ -45,7 +45,7 @@ dependencies: deps              # deps alias
 %: %.cc                         # cancel the implicit rule
 
 .PHONY: clean spotless export unexport
-.INTERMEDIATE: $(obj) $(fuzzer_dir)
+.INTERMEDIATE: $(obj)
 
 
 
@@ -97,7 +97,7 @@ $(out): %: %.o
 $(prefix):
 	@mkdir -p $(prefix)
 
-$(corpi): $(prefix)/%_seed_corpus.zip: ./%
+$(corpora): $(prefix)/%_seed_corpus.zip: ./%
 	@find $</* -maxdepth 0 -type d \
 	    -printf "zip\t$@\t%f\n" \
 	    -exec zip -q -r $@ {} +
