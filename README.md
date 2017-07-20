@@ -1,7 +1,7 @@
 Fuzz Targets
 ============
 
-The files in this directory are fuzzing targets for wolfSSL. They follow the
+The files in this repository are fuzzing targets for wolfSSL. They follow the
 LLVM libFuzzer API and have a very specific naming scheme for integration with
 [Google's OSS-Fuzz service][oss-fuzz]. For more information about these
 qualities, see [the section on making new targets](#new_target) below. To be
@@ -9,7 +9,7 @@ run, they must be linked against `libFuzzer.a`. For more information about
 compilation, see [the section on compiling](#compiling_target) below.
 
 [The very last section of this README](#future) is meant to document the
-foreseeable future of this directory, including suggestions on what fuzz
+foreseeable future of this repository, including suggestions on what fuzz
 targets should be written next. It is requested that future editors of this
 directory update that section to reflect their work and thoughts.
 
@@ -25,20 +25,21 @@ For information on how to get a target running inside of OSS-Fuzz, see [the
 section on OSS-Fuzz](#with_oss-fuzz) below.
 
 For the entirety of this section, let "`fuzz_target`" be a stand-in for the
-name of your target. It will be identical to the file name of the source code,
-but with out the ".c" extension.
+name of your target. It will be identical to the directory name containing the
+source code.
 
-If you have access to the make utility, everything will be simple: simply
-execute `make fuzz_target` to compile it. If necessary, make will automatically
-retrieve the libFuzzer library and the most recent version of clang, both of
-which are required for compilation. Neither are installed, but kept locally
-instead. If you wish to get these dependencies explicitly, call `make deps` or
-`make dependencies`. They are synonymous
+If you have access to the make utility, everything will be simple. Before
+compiling any individual target, run `make deps`. If necessary, make will
+automatically retrieve the libFuzzer library and the most recent version of
+clang, both of which are required for compilation. Neither are installed, but
+kept locally instead. `make dependencies` is synonymous.
 
-Furthermore, running `make` or `make all` will compile all files ending in ".c"
-as fuzz targets, running `make clean` will delete the compiled fuzz targets but
-leave the source files intact, and running `make spotless` will act like `make
-clean` but also delete libFuzzer and clang.
+From there, simply execute `make fuzz_target` to compile a fuzz target.
+
+Furthermore, running `make` or `make all` will compile all fuzz targets,
+running `make clean` will delete the compiled fuzz targets but leave the source
+files intact, and running `make spotless` will act like `make clean` but also
+delete the dependencies build by `make deps`.
 
 If you don't have access to make, you're going to have to do it all by hand.
 What follows for the rest of this section are the instructions for doing what
@@ -57,8 +58,10 @@ The first thing to do is to get libFuzzer. To do this, run these commands from
 the shell:
 
 ```
-$ git clone https://chromium.googlesource.com/chromium/llvm-project/llvm/lib/Fuzzer Fuzzer
+$ url=https://chromium.googlesource.com/chromium/llvm-project/llvm/lib/Fuzzer
+$ git clone $url Fuzzer
 $ ./Fuzzer/build.sh
+$ rm -rf Fuzzer
 ```
 
 The above clones in the libFuzzer git repository then builds it. There should
@@ -71,48 +74,44 @@ use those tools to pull down the most up-to-date version of clang then make a
 link for our convenience. In all, that looks like this:
 
 ```
-$ export CLANG_TOOLS=https://chromium.googlesource.com/chromium/src/tools/clang
-$ git clone $CLANG_TOOLS new_clang/clang/clang
+$ url=https://chromium.googlesource.com/chromium/src/tools/clang
+$ git clone $url new_clang/clang/clang
 $ python new_clang/clang/clang/scripts/update.py
-$ cp -s -t . new_clang/third_party/llvm-build/Release+Asserts/bin/clang{,++}
+$ ln -s -t . new_clang/third_party/llvm-build/Release+Asserts/bin/clang{,++}
 ```
 
 And with that, you now have a recent version of clang. It has not been
-installed, so to use it you'll have to call clang like
-```
-$ ./clang
-```
-from this directory. Alternatively, you could call it like
-```
-$ ./new_clang/third_party/llvm-build/Release+Asserts/bin/clang
-```
-but that's a huge command. That's why we make links.
+installed, so to use it you'll have to call clang like `./clang` from this
+directory.
 
 To compile, run these commands from the shell:
 
 ```
-$ ./clang -fsanitize=address -fsanitize-coverage=trace-pc-guard -c fuzz_target.c -o fuzz_target.o
-$ ./clang++ -fsanitize=address -fsanitize-coverage=trace-pc-guard fuzz_target.o -L. -lwolfssl -lFuzzer -o fuzz_target
+$ CFLAGS="-fsanitize=address -fsanitize-coverage=trace-pc-guard"
+$ LDFLAGS="-L. -lwolfssl -lFuzzer"
+$ ./clang $CFLAGS -c fuzz_target/target.c -o fuzz_target/target.o
+$ ./clang++ $CFLAGS fuzz_target/target.o -o fuzz_target/target $LDFLAGS
 $ rm fuzz_target.o
 ```
 
-And with that, `fuzz_target` has been compiled. This compile step is the only 
+And with that, `fuzz_target` has been compiled. This compile step is the only
 
 <a name="run_target">Running Targets</a>
 ----------------------------------------
 
 For the entirety of this section, let "`fuzz_target`" be a stand-in for the
-name of your target. It will be identical to the file name of the source code,
-but with out the ".c" extention.
+name of your target. It will be identical to the directory name containing
+the source code.
 
-After compiling, `fuzz_target` is an executable that can be called like this:
+After compiling, `cd` into `fuzz_target/`, and `target` is an executable that
+can be called like this:
 
 ```
-$ ./fuzz_target [OPTION ...] [CORPUS ...]
+$ ./target [OPTION ...] [CORPUS ...]
 ```
 or
 ```
-$ ./fuzz_target [OPTION ...] [FILE ...]
+$ ./target [OPTION ...] [FILE ...]
 ```
 
 A corpus is a directory with files containing example input data, good or bad,
@@ -137,34 +136,33 @@ fuzz target: [source code](#target_src), [options](#target_opt), and
 [corpus](#target_corp). See their respective subsections below for more
 information on each.
 
-All three parts must be placed in the same directory with all the other fuzz
-targets. There are no exceptions; failure to comply with this will prevent your
+All three parts must be placed in the same directory, but separate from any
+other fuzz target. The name of this directory will be the name of the fuzz
+target. There are no exceptions; failure to comply with this will prevent your
 fuzz target from being found by OSS-Fuzz.
 
-The only required part is the source code; options files and corpuses (corpi?)
-may be omitted, though it is recommended that you include all three components.
+The only required part is the source code; options files and corpora may be
+omitted, though it is recommended that you at least also include a corpus.
 
 The fourth, extra optional part is the dictionary. You can read more about how
 to use or include them in [the OSS-Fuzz documentation][dict]. If you wish to
-include one, create a file ending in ".dict" in this directory, then add a line
-like this to the options file for the fuzz target that will use it:
+include one, create a file ending in ".dict" in the root directory of this
+repository, then add a line like this to the options file for the fuzz target
+that will use it:
 
 ```
 [libfuzzer]
 dict = my_dictionary.dict
 ```
 
-Furthermore, in this directory is a file named `user_settings.h`. The contents
-of this file will be used when compiling wolfSSL in the OSS-Fuzz environment.
-It's most important job is to replace the random number generator with a
-counter so that wolfSSL will behave deterministically.
+Note that dictionaries are found relative to the root directory of this
+repository. Do not use relative or absolute paths, simply the name of the file.
 
 ### <a name="target_src">Source Code</a>
 
 The source code is more or less what you'd expect: the code describing the
-test. It can be named however you like, though must end with ".c". Internally,
-the only requirement is that it not implement `main()` and instead implement a
-function for this prototype:
+test. It must be named `target.c`. Internally, the only requirement is that it
+not implement `main()` and instead implement a function for this prototype:
 
 ```c
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t sz);
@@ -178,21 +176,17 @@ the content of a file. If the target was invoked at the command line with file
 names, the content of data will be exactly the content of the file. Otherwise,
 it will contain the fuzzed version of files in the corpus.
 
-From here, all you need to do to accomplish the test is to pass `data` and `sz`
-to whatever API call you wish to fuzz. For examples, please see the other fuzz
-targets contained in this directory.
+From here, `data` and `sz` must become the input of another function. In many
+cases, this is as simple as using `data` and `sz` in the function call, but
+sometimes creativity must be used to expose the library to the fuzzed data.
 
 ### <a name="target_opt">Options</a>
 
 An options file will indicate to OSS-Fuzz which flags and values to pass to the
-fuzz target when running it. It is not required, but it is recommended that you
-at least define `max_len`.
-
-An options file should be named the same as the source code, but with
-".options" in place of ".c".
+fuzz target when running it. An options file must be named `target.options`.
 
 The format seems to be similar to [the ini format][ini], though no explicit
-confirmation of this was found. Regardless, a file about like this is suitable:
+confirmation of this was found. For example, a file like this is valid:
 
 ```
 [libfuzzer]
@@ -208,12 +202,13 @@ recommended that you include a few examples of good input. If ever fuzzing
 finds an example of bad input, it is also recommended that you add this bad
 input to make sure the problem that created it is not re-introduced.
 
-The corpus must be a directory named the same as the source code, but with
-`_corpus` in place of ".c".
+The corpus must be a directory. It may have any name, though know that when
+OSS-Fuzz tries to find corpora, it will assume every directory in the target's
+directory is a corpus.
 
 The contents of the corpus do not need to conform to any kind of naming scheme,
-though libFuzzer expects the file's name to be the sha1 sum of the file, and so
-it is recommended that all corpus files are named accordingly.
+though libFuzzer is happiest when the file's name is the sha1 sum of the file,
+and so it is recommended that all corpus files are named accordingly.
 
 <a name="with_oss-fuzz">Running Targets in OSS-Fuzz</a>
 -------------------------------------------------------
@@ -242,13 +237,16 @@ $ git clone https://github.com/google/oss-fuzz
 
 Note that if you are going to be modifying the fuzz targets, you'll need to
 modify where Docker will get its targets. Open
-`./oss-fuzz/projects/wolfssl/Dockerfile` and change the line
+`./oss-fuzz/projects/wolfssl/Dockerfile` and change this line:
+
 ```
 RUN git clone --depth 1 https://github.com/wolfssl/wolfssl.git wolfssl
 ```
+
 to something like this:
+
 ```
-RUN git clone --depth 1 https://github.com/<you>/wolfssl.git -b <work_branch>wolfssl
+RUN git clone --depth 1 https://github.com/<you>/wolfssl.git -b <work_branch> wolfssl
 ```
 
 Be sure to replace `<you>` with your github user name and `<work_branch>` with
@@ -270,20 +268,21 @@ You may also choose to use `memory` or `undefined` for the sanitizer option.
 To actually run a fuzz target, run this command:
 
 ```
-# python infra/helper.py run_fuzzer wolfssl <fuzz_target>
+# python infra/helper.py run_fuzzer wolfssl fuzz_target
 ```
 
-Where `<fuzz_target>` corresponds with the file name (without the ".c") of the
-target you wish to run.
+Where `fuzz_target` stands for the fuzz target you wish to run. The name of the
+fuzz target corresponds with the directory name containing the source code of
+the target you wish to run.
 
 <a name="future">Future Direction</a>
 -------------------------------------
 
 Add more tests for various wolfSSL and wolfCrypt APIs. Focus on APIs which
 process buffers containing data that plausibly could originate from some
-outside source. As examples, in `server.c` the fuzzed data is impersonating a
-server, and in `pem2der.c` the fuzzed data is used as a PEM certificate. In
-each case, the fuzzed data represents malformed input.
+outside source. It is possible that a target for any given API has already been
+written: check the private wolfssl testing repository for targets before
+writing them yourself.
 
 <!-- References -->
 [libFuzzer]: http://llvm.org/docs/LibFuzzer.html
