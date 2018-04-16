@@ -25,12 +25,19 @@
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 
+#define WC_MAX_FUZZ_INPUT_SZ 25000
+
 /* testing wolfSSL_CTX_use_certificate_buffer with PEM as the filetype*/
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t sz)
 {
     WOLFSSL_CTX *ctx;
     int          ret;
+
+    /* avoid 25s timeout with parsing large files */
+    if (sz > WS_MAX_FUZZ_INPUT_SZ) {
+        return 0;
+    }
 
     wolfSSL_Init();
 
