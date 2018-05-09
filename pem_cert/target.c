@@ -35,7 +35,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t sz)
     int          ret;
 
     /* avoid 25s timeout with parsing large files */
-    if (sz > WS_MAX_FUZZ_INPUT_SZ) {
+    if (sz > WC_MAX_FUZZ_INPUT_SZ) {
         return 0;
     }
 
