@@ -1,0 +1,69 @@
+[package]
+name = "cryptofuzz-rustcrypto-hashes"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+blake2 = {git = "https://github.com/RustCrypto/hashes" }
+fsb = {git = "https://github.com/RustCrypto/hashes"}
+gost94 = {git = "https://github.com/RustCrypto/hashes"}
+groestl = {git = "https://github.com/RustCrypto/hashes"}
+k12 = {git = "https://github.com/RustCrypto/hashes"}
+md-5 = {git = "https://github.com/RustCrypto/hashes"}
+md2 = {git = "https://github.com/RustCrypto/hashes"}
+md4 = {git = "https://github.com/RustCrypto/hashes"}
+ripemd = {git = "https://github.com/RustCrypto/hashes"}
+sha1 = {git = "https://github.com/RustCrypto/hashes"}
+sha2 = {git = "https://github.com/RustCrypto/hashes"}
+sha3 = {git = "https://github.com/RustCrypto/hashes"}
+shabal = {git = "https://github.com/RustCrypto/hashes"}
+sm3 = {git = "https://github.com/RustCrypto/hashes"}
+streebog = {git = "https://github.com/RustCrypto/hashes"}
+tiger = {git = "https://github.com/RustCrypto/hashes"}
+whirlpool = {git = "https://github.com/RustCrypto/hashes"}
+
+digest = { version = "0.10", default-features = false }
+hkdf = {git = "https://github.com/RustCrypto/KDFs"}
+
+hmac = {git = "https://github.com/RustCrypto/MACs"}
+
+scrypt = {git = "https://github.com/RustCrypto/password-hashes"}
+
+pbkdf2 = {git = "https://github.com/RustCrypto/password-hashes"}
+
+bcrypt-pbkdf = {git = "https://github.com/RustCrypto/password-hashes"}
+
+argon2 = {git = "https://github.com/RustCrypto/password-hashes"}
+
+crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
+
+cmac = {git = "https://github.com/RustCrypto/MACs", rev="9d876cb237bbbddee527d8126663268bea91b6e9"}
+
+ofb = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
+cfb-mode = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
+cfb8 = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
+cipher = "0.3"
+aes = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+cast5 = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+idea = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+blowfish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+twofish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+threefish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+serpent = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+sm4 = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+des = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+
+# Elliptic curves
+
+elliptic-curve = { version = "0.12.0-pre.1", default-features = false, features = ["hazmat", "sec1"] }
+
+k256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+p256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+
+
+generic-array = "0.14.5"
+libc = "0.2.0"
