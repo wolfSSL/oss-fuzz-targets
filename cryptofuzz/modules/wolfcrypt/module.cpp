@@ -676,10 +676,10 @@ end:
     };
 
 
-    Digest<Md2, MD2_DIGEST_SIZE, Init_Void<Md2>, DigestUpdate_Void<Md2>, DigestFinalize_Void<Md2>>
+    Digest<Md2, MD2_DIGEST_SIZE, Init_Int<Md2>, DigestUpdate_Int<Md2>, DigestFinalize_Int<Md2>>
         md2(wc_InitMd2, wc_Md2Update, wc_Md2Final, nullptr, nullptr, wc_Md2Hash);
 
-    Digest<Md4, MD4_DIGEST_SIZE, Init_Void<Md4>, DigestUpdate_Void<Md4>, DigestFinalize_Void<Md4>>
+    Digest<Md4, MD4_DIGEST_SIZE, Init_Int<Md4>, DigestUpdate_Int<Md4>, DigestFinalize_Int<Md4>>
         md4(wc_InitMd4, wc_Md4Update, wc_Md4Final);
 
     Digest<Md5, MD5_DIGEST_SIZE, Init_IntParams<Md5>, DigestUpdate_Int<Md5>, DigestFinalize_Int<Md5>>
