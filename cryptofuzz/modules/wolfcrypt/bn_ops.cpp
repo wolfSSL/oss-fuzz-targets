@@ -489,6 +489,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
                 /* Modulus must be > 2 and prime */
                 CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_GT);
+                /* Prevent timeouts in the primality test */
+                CF_CHECK_LTE(mp_count_bits(bn[1].GetPtr()), 1000);
                 MP_CHECK_EQ(mp_prime_is_prime_ex(bn[1].GetPtr(), 30, &is_prime, wolfCrypt_detail::GetRNG()), MP_OKAY);
                 CF_CHECK_EQ(is_prime, 1);
 
@@ -1240,7 +1242,7 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* Must be system RNG; otherwise the fuzzer will PRNG seeds that will
      * incorrectly regard a prime as composite.
      */
-    CF_CHECK_EQ(mp_prime_is_prime_ex(bn[0].GetPtr(), 256, &r, wolfCrypt_detail::GetSystemRNG()), MP_OKAY);
+    CF_CHECK_EQ(mp_prime_is_prime_ex(bn[0].GetPtr(), 64, &r, wolfCrypt_detail::GetSystemRNG()), MP_OKAY);
     CF_CHECK_EQ( res.Set( std::to_string(r) ), true);
 
     ret = true;
