@@ -15,8 +15,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     uint8_t* proof = nullptr;
     fuzzing::datasource::Datasource ds(data, size);
     try {
-        const auto type = ds.Get<SrpType>();
-        const auto side = ds.Get<SrpSide>();
+        /* Do not read the enums directly from the datasource, because loading
+         * an arbitrary bit pattern into an enum is undefined behavior. */
+        const auto type = static_cast<SrpType>(ds.Get<uint8_t>() % 8);
+        const auto side = static_cast<SrpSide>(ds.Get<uint8_t>() % 2);
         const auto username = ds.GetData(0);
         const auto N = ds.GetData(0);
         const auto g = ds.GetData(0);

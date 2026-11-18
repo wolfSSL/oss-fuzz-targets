@@ -80,6 +80,8 @@ namespace wolfCrypt_detail {
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
+    /* Set once a read from ds has failed for lack of data */
+    bool dsExhausted = false;
 #endif
 
 #if defined(WOLF_CRYPTO_CB)
@@ -165,6 +167,7 @@ namespace wolfCrypt_detail {
         fixed_allocs.clear();
 #endif
         wolfCrypt_detail::ds = ds;
+        wolfCrypt_detail::dsExhausted = false;
 #else
         (void)ds;
 #endif
@@ -173,6 +176,7 @@ namespace wolfCrypt_detail {
     void UnsetGlobalDs(void) {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
         wolfCrypt_detail::ds = nullptr;
+        wolfCrypt_detail::dsExhausted = false;
 #endif
     }
 
@@ -192,9 +196,17 @@ namespace wolfCrypt_detail {
             }
             return fail;
         }
+        if ( dsExhausted == true ) {
+            /* Once the datasource has run out of data, every subsequent
+             * Get() throws. This reduces timeouts due to primality testing
+             * spending most of its time throwing/catching exceptions. */
+            return false;
+        }
         try {
             fail = ds->Get<bool>();
-        } catch ( ... ) { }
+        } catch ( ... ) {
+            dsExhausted = true;
+        }
 
         if ( fail ) {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)

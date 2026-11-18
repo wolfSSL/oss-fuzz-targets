@@ -34,6 +34,14 @@ ecc_key* ECCKey::GetPtr(void) {
     uint8_t* x963 = nullptr;
     ecc_key* newKey = nullptr;
 
+    /* GetPtr() is called in the middle of operations whose callers consult
+     * haveAllocFailure afterwards to decide whether a failure is legitimate.
+     * The X963 round trip below resets the flag for its own purposes, so
+     * remember any allocation failure that was recorded before that reset
+     * and put it back before returning.
+     */
+    bool prevAllocFailure = haveAllocFailure;
+
     bool exportToX963 = false;
     try {
         exportToX963 = ds.Get<bool>();
@@ -57,14 +65,17 @@ ecc_key* ECCKey::GetPtr(void) {
 
         const bool valid = wc_ecc_check_key(key) == 0;
 
+        prevAllocFailure = prevAllocFailure || haveAllocFailure;
         haveAllocFailure = false;
         if ( wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) != 0 ) {
             /* Allowed to fail if either:
              *
-             * - Compression is used and the input key is invalid
+             * - The input key is invalid. wc_ecc_import_x963_ex treats its
+             *   input as untrusted and rejects points that are not on the
+             *   curve, for both compressed and uncompressed encodings.
              * - An allocation failure occured during wc_ecc_import_x963_ex
              */
-            CF_ASSERT((compressed && !valid) || haveAllocFailure, "Cannot import X963-exported ECC key");
+            CF_ASSERT(!valid || haveAllocFailure, "Cannot import X963-exported ECC key");
             goto end;
         }
 
@@ -80,6 +91,8 @@ ecc_key* ECCKey::GetPtr(void) {
 end:
     util::free(x963);
     CF_NORET(wc_ecc_key_free(newKey));
+
+    haveAllocFailure = haveAllocFailure || prevAllocFailure;
 
     return key;
 }
@@ -466,6 +479,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
     bool ctIsEmpty = false;
     bool randomSigSz = false;
     bool hashNotFound = false;
+    bool badHashLength = false;
 
     {
         try {
@@ -507,7 +521,9 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
             ctIsEmpty = CT.GetSize() == 0;
-            WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
+            const int verifyRet = wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr());
+            badHashLength = verifyRet == BAD_LENGTH_E;
+            WC_CHECK_EQ(verifyRet, 0);
         } else {
             std::optional<wc_HashType> hashType;
             hashNotFound = true;
@@ -521,7 +537,9 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
 
             const auto CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
             ctIsEmpty = CT.GetSize() == 0;
-            WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
+            const int verifyRet = wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr());
+            badHashLength = verifyRet == BAD_LENGTH_E;
+            WC_CHECK_EQ(verifyRet, 0);
         }
 
         ret = verify ? true : false;
@@ -543,6 +561,11 @@ end:
             /* wolfCrypt ECDSA verification will fail if the input msg is empty */
             ret = std::nullopt;
         } else if ( hashNotFound ) {
+            ret = std::nullopt;
+        } else if ( badHashLength ) {
+            /* wolfCrypt only accepts hashes of
+             * WC_MIN_DIGEST_SIZE..WC_MAX_DIGEST_SIZE bytes and returns
+             * BAD_LENGTH_E otherwise. */
             ret = std::nullopt;
         } else if ( op.digestType.Is(CF_DIGEST("NULL")) && op.cleartext.IsZero() ) {
             ret = std::nullopt;
