@@ -137,15 +137,27 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
                 case    ID("Cryptofuzz/Cipher/AES_128_GCM"):
                 case    ID("Cryptofuzz/Cipher/AES_192_GCM"):
                 case    ID("Cryptofuzz/Cipher/AES_256_GCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+                    if ( op.tagSize == std::nullopt ) {
+                        /* OpenSSL fails to decrypt its own CCM and GCM if a tag
+                         * is not used */
+                        tryDecrypt = false;
+                    } else if ( module->ID == CF_MODULE("wolfCrypt-OpenSSL") &&
+                                *op.tagSize < 12 ) {
+                        /* wolfSSL enforces a minimum GCM tag length
+                         * (WOLFSSL_MIN_AUTH_TAG_SZ, 12 by default) when
+                         * decrypting. */
+                        tryDecrypt = false;
+                    }
+                    break;
                 case    ID("Cryptofuzz/Cipher/AES_128_CCM"):
                 case    ID("Cryptofuzz/Cipher/AES_192_CCM"):
                 case    ID("Cryptofuzz/Cipher/AES_256_CCM"):
                 case    ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
                 case    ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
                 case    ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
-                case    ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
-                case    ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
-                case    ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
                     if ( op.tagSize == std::nullopt ) {
                         /* OpenSSL fails to decrypt its own CCM and GCM ciphertexts if
                          * a tag is not included
